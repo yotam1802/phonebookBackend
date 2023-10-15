@@ -1,7 +1,8 @@
 const express = require('express')
 const app = express()
+app.use(express.json())
 
-const data = [
+let data = [
     {
         "id": 1,
         "name": "Arto Hellas",
@@ -38,6 +39,49 @@ app.get('/api/persons/:id', (request, response) => {
     const phonebookEntry = data.find(entry => id === entry.id)
 
     phonebookEntry ? response.json(phonebookEntry) : response.status(404).end()
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    const phonebookEntry = data.find(entry => id === entry.id)
+
+    if (phonebookEntry) {
+        data = data.filter(entry => entry.id !== id)
+        return response.status(204).end()
+    } else {
+        response.status(404).end()
+    }
+})
+
+const generateId = () => {
+    const maxId = data.length > 0 ? Math.max(...data.map(p => p.id)) : 0
+    return maxId + 1
+}
+
+app.post('/api/persons', (request, response) => {
+    const body = request.body
+    const existingName = data.find((entry) => entry.name === body.name)
+
+    if (!body.name || !body.number || existingName) {
+        if (existingName) {
+            response.status(400).json({
+                "error": "Name provided already exists."
+            })  
+        } else {
+            response.status(400).json({
+                "error": "No name or number provided in the request header."
+            })
+        }
+    }
+
+    const newPhonebookEntry = {
+        name: body.name,
+        number: body.number,
+        id: generateId()
+    }
+
+    data = data.concat(newPhonebookEntry)
+    response.json(newPhonebookEntry)
 })
 
 const PORT = 3001
